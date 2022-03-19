@@ -1,0 +1,146 @@
+--> Phần Controller, để chung với phần đăng nhập cũng được
+public ActionResult ChangePass()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult frmchangePass(string ex_password, string Password)
+        {
+            var nv = Session["nhanvien"] as NHANVIEN;
+            if (nv.MatKhau == ex_password)
+            {
+                var model = db.NHANVIENs.Find(nv.MaNV);
+                model.MatKhau = Password;
+                db.SaveChanges();
+                Session["nhanvien"] = null;
+                TempData["error"] = "Đổi mật khẩu thành công.Bạn vui lòng đăng nhập lại sau khi đổi mật khẩu.";
+                return Redirect("/admin/dangnhap/index");
+            }
+            else
+            {
+                TempData["error"] = "Mật khẩu cũ không trùng, vui lòng nhập lại.";
+                return Redirect("/admin/dangnhap/changepass");
+            }
+
+        }
+
+        public ActionResult Logout()
+        {
+            Session["nhanvien"] = null;
+            return Redirect("/admin/dangnhap/index");
+        }
+
+--> Phần View
+
+@{
+    ViewBag.Title = "Đổi mật khẩu";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            Đổi mật khẩu
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i>Trang chủ</a></li>
+            <li class="active">Đổi mật khẩu</li>
+        </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <!-- /.row -->
+        <div class="row">
+            @if (TempData["error"] != null)
+            {
+                <div class="alert alert-success text-center" id="AlertBox">
+                    @TempData["error"]
+                </div>
+            }
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="box">
+                    <div class="box-body">
+                        <div class="col-lg-3"></div>
+                        <div class="col-lg-5">
+                            @using (Html.BeginForm("frmchangePass", "DangNhap", FormMethod.Post, new { enctype = "multipart/form-data", id = "frmChangePass" }))
+                            {
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label>Mật khẩu cũ</label>
+                                            <input type="password" name="ex_password" class="form-control" placeholder="Nhập mật khẩu cũ....">
+                                        </div>
+
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label>Mật khẩu mới</label>
+                                            <input type="password" name="Password" id="Password" class="form-control" placeholder="Nhập mật khẩu mới....">
+                                        </div>
+
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label>Nhập lại mật khẩu</label>
+                                            <input type="password" name="re_Password" id="re_Password" class="form-control" placeholder="Nhập mật khẩu cũ....">
+                                        </div>
+
+                                    </div>
+                                    <div class="col-lg-12 text-center">
+                                        <button type="submit" class="btn btn-primary btn-lg">Cập nhật</button>
+                                    </div>
+                                </div>
+
+                            }
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.col-lg-12 -->
+        </div>
+    </section><!-- /.content -->
+</div>
+
+@section jsSection{
+
+    <script>
+        $(document).ready(function () {
+
+            //nếu không có thao tác gì thì ẩn đi
+            $('#AlertBox').removeClass('hide');
+
+            //Sau khi hiển thị lên thì delay 1s và cuộn lên trên sử dụng slideup
+            $('#AlertBox').delay(2000).slideUp(500);
+            //Khi bàn phím được nhấn và thả ra thì sẽ chạy phương thức này
+            $("#frmChangePass").validate({
+                rules: {
+                    Password: {
+                        required: true
+                    },
+                    re_Password: {
+                        required: true,
+                        equalTo: "#Password"
+                    }
+                },
+                messages: {
+                    Password: {
+                        required: 'Vui lòng nhập mật khẩu'
+                    },
+                    re_Password: {
+                        required: 'Vui lòng nhập lại mật khẩu',
+                        equalTo: 'Mật khẩu không trùng'
+                    }
+                }
+            });
+
+        });
+    </script>
+
+}
+
