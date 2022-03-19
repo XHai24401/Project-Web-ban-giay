@@ -1,0 +1,357 @@
+public class HangController : Controller
+    {
+        private SneakerEntities db = new SneakerEntities();
+        // GET: Admin/Hang
+        public ActionResult Index(int page = 1, int pagesize = 10)
+        {
+            var model = db.HANGs.OrderByDescending(x => x.MaHang);
+            return View(model.ToPagedList(page, pagesize));
+        }
+
+        public JsonResult Delete(int ID)
+        {
+
+            try
+            {
+                var model = db.HANGs.Find(ID);
+                db.HANGs.Remove(model);
+                db.SaveChanges();
+                return Json(new
+                {
+                    status = true
+                });
+            }
+            catch
+            {
+                return Json(new
+                {
+                    status = false
+                });
+            }
+
+        }
+
+
+        [HttpPost]
+        public ActionResult frmAdd(HANG entity)
+        {
+            try
+            {
+                var model = new HANG();
+                model.TenHang = entity.TenHang;
+                model.Link = Str_Metatitle(entity.TenHang).Trim();
+                db.HANGs.Add(model);
+                db.SaveChanges();
+                TempData["message"] = "Thêm hãng sản xuất thành công";
+                return Redirect("/admin/hang/index");
+
+            }
+            catch
+            {
+                TempData["message"] = "Thêm hãng sản xuất KHÔNG thành công";
+                return Redirect("/admin/hang/index");
+            }
+        }
+
+
+        [HttpPost]
+        public ActionResult frmEdit(HANG entity)
+        {
+            try
+            {
+                var model = db.HANGs.Find(entity.MaHang);
+                model.TenHang = entity.TenHang;
+                model.Link = Str_Metatitle(entity.TenHang).Trim();
+                db.SaveChanges();
+                TempData["message"] = "Cập nhật hãng sản xuất thành công";
+                return Redirect("/admin/hang/index");
+            }
+            catch
+            {
+                TempData["message"] = "Cập nhật hãng sản xuất KHÔNG thành công";
+                return Redirect("/admin/hang/index");
+            }
+        }
+
+        public JsonResult GetByID(int ID)
+        {
+            db.Configuration.ProxyCreationEnabled = false;
+            var model = db.HANGs.Find(ID);
+            return Json(model, JsonRequestBehavior.AllowGet);
+        }
+
+        public string Str_Metatitle(string str)
+        {
+            string[] VietNamChar = new string[]
+            {
+                "aAeEoOuUiIdDyY",
+                "áàạảãâấầậẩẫăắằặẳẵ",
+                "ÁÀẠẢÃÂẤẦẬẨẪĂẮẰẶẲẴ",
+                "éèẹẻẽêếềệểễ",
+                "ÉÈẸẺẼÊẾỀỆỂỄ",
+                "óòọỏõôốồộổỗơớờợởỡ",
+                "ÓÒỌỎÕÔỐỒỘỔỖƠỚỜỢỞỠ",
+                "úùụủũưứừựửữ",
+                "ÚÙỤỦŨƯỨỪỰỬỮ",
+                "íìịỉĩ",
+                "ÍÌỊỈĨ",
+                "đ",
+                "Đ",
+                "ýỳỵỷỹ",
+                "ÝỲỴỶỸ:/"
+            };
+            //Thay thế và lọc dấu từng char      
+            for (int i = 1; i < VietNamChar.Length; i++)
+            {
+                for (int j = 0; j < VietNamChar[i].Length; j++)
+                {
+                    str = str.Replace(VietNamChar[i][j], VietNamChar[0][i - 1]).Replace("“", string.Empty).Replace("”", string.Empty);
+                    str = str.Replace("\"", string.Empty).Replace("'", string.Empty).Replace("`", string.Empty).Replace(".", string.Empty).Replace(",", string.Empty);
+                    str = str.Replace(".", string.Empty).Replace(",", string.Empty).Replace(";", string.Empty).Replace(":", string.Empty);
+                    str = str.Replace("?", string.Empty);
+                }
+            }
+            string str1 = str.ToLower();
+            string[] name = str1.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+            string meta = null;
+            //Thêm dấu '-'
+            foreach (var item in name)
+            {
+                meta = meta + item + "-";
+            }
+            return meta.Trim();
+        }
+    }
+
+---> Phần view
+
+@using PagedList.Mvc;
+@using Sneaker.Models.EF;
+@{
+    ViewBag.Title = "Quản lý hãng sản xuất";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+    int dem = 1;
+}
+@model PagedList.IPagedList<HANG>
+
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            Danh sách hãng sản xuất
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="/"><i class="fa fa-dashboard"></i>Trang chủ</a></li>
+            <li><a href="/hieuxe/index">Quản lý hãng sản xuất</a></li>
+            <li class="active">Danh sách</li>
+        </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            @if (TempData["message"] != null)
+            {
+                <div class="alert alert-success text-center" id="AlertBox">
+                    @TempData["message"]
+                </div>
+            }
+        </div>
+        <div class="row">
+            <div class="col-md-4" style="margin-bottom: 10px">
+                <button class="btn btn-lg btn-primary" data-toggle="modal" data-target="#add">Thêm mới </button>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="add" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Thêm mới hãng sản xuất</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @using (Html.BeginForm("frmAdd", "Hang", FormMethod.Post, new { enctype = "multipart/form-data" }))
+                        {
+                            <div class="form-group col-sm-12">
+                                <label for="recipient-name" class="col-form-label">Tên hãng sản xuất:</label>
+                                <input type="text" name="TenHang" class="form-control" required>
+                            </div>
+                            <div class="form-group text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">Thêm mới</button>
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title"></h3>
+                    </div><!-- /.box-header -->
+                    <div class="box-body">
+                        <table id="tblData" class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">#</th>
+                                    <th class="text-center">Tên hãng sản xuất</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+
+                                    <tr>
+                                        <td class="text-center">@dem</td>
+                                        <td class="text-center">@item.TenHang</td>
+                                        <td>
+                                            <button class="btn btn-default btnEdit" data-id="@item.MaHang" title="Cập nhật hãng sản xuất"><i class="fa fa-edit"></i></button>
+                                            <button class="btn btn-danger btnDelete" data-id="@item.MaHang" title="Xóa hãng sản xuất"><i class="fa fa-remove"></i></button>
+                                        </td>
+                                    </tr>
+                                    dem++;
+                                }
+
+                            </tbody>
+
+                        </table>
+                        <div class="box-footer">
+                            <div class="pull-left">
+                                Trang @(Model.PageCount < Model.PageNumber ? 0 : Model.PageNumber) / @Model.PageCount
+                            </div>
+                            <div class="pull-right">
+                                @Html.PagedListPager(Model, page => Url.Action("Index", new { page }))
+                            </div>
+                        </div>
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+
+            </div><!-- /.col -->
+        </div><!-- /.row -->
+    </section><!-- /.content -->
+</div>
+<!-- Modal -->
+<div class="modal fade edit" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-center text-uppercase" id="exampleModalLabel">Cập nhật hãng sản xuất</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @using (Html.BeginForm("frmEdit", "Hang", FormMethod.Post, new { enctype = "multipart/form-data" }))
+                {
+                    <input type="hidden" name="MaHang" id="MaHang" />
+                    <div class="form-group col-sm-12">
+                        <label for="recipient-name" class="col-form-label">Tên hãng sản xuất:</label>
+                        <input type="text" name="TenHang" id="TenHang" class="form-control" required>
+                    </div>
+
+                    <div class="form-group text-center">
+                        <button type="submit" class="btn btn-primary">Cập nhật</button>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section jsSection{
+
+    <script>
+        $(function () {
+            //nếu không có thao tác gì thì ẩn đi
+            $('#AlertBox').removeClass('hide');
+
+            //Sau khi hiển thị lên thì delay 1s và cuộn lên trên sử dụng slideup
+            $('#AlertBox').delay(2000).slideUp(500);
+
+
+            $('.btnDelete').off('click').on('click', function () {
+
+                const notice = PNotify.notice({
+                    title: 'Thông báo',
+                    text: 'Bạn thật sự muốn xóa?',
+                    icon: 'fa fa-question-circle',
+                    width: '360px',
+                    minHeight: '110px',
+                    hide: false,
+                    closer: false,
+                    sticker: false,
+                    destroy: true,
+                    stack: new PNotify.Stack({
+                        dir1: 'down',
+                        modal: true,
+                        firstpos1: 25,
+                        overlayClose: false
+                    }),
+                    modules: new Map([
+                        ...PNotify.defaultModules,
+                        [PNotifyConfirm, {
+                            confirm: true
+                        }]
+                    ])
+                });
+
+                notice.on('pnotify:confirm', () =>
+                    $.ajax({
+                        data: { ID: $(this).data('id') },
+                        url: '/admin/hang/Delete',
+                        dataType: 'Json',
+                        type: 'POST',
+                        success: function (res) {
+                            if (res.status == true) {
+                                PNotify.success({
+                                    title: 'THÔNG BÁO!!',
+                                    text: 'Xóa hãng sản xuất thành công.'
+                                });
+                                 setTimeout(function () {
+                                    window.location.href = "/admin/hang/index";
+                                }, 2000);
+                            } else {
+                                PNotify.error({
+                                    title: 'THÔNG BÁO!!',
+                                    text: 'Xóa hãng sản xuất KHÔNG thành công.'
+                                });
+                            }
+                        }
+                    })
+
+                );
+                //notice.on('pnotify:cancel', () => alert('Oh ok. Chicken, I see.'));
+
+            });
+
+            $('.btnEdit').click(function (event) {
+                $('.edit').modal('show');
+                //alert($(this).data('id'));
+                var ID = $(this).data('id');
+                $.ajax({
+                    url: "/admin/Hang/GetByID/" + ID,
+                    type: 'GET',
+                    dataType: 'json',
+                    contentType: "application/json; charset=utf-8",
+                    success: function (res) {
+                        $('#TenHang').val(res.TenHang);
+                        $('#MaHang').val(res.MaHang);
+                    }
+                });
+            });
+        });
+
+    </script>
+
+}
